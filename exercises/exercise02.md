@@ -1,6 +1,6 @@
 # Exercise 02: World Database – Joins, Grouping, and Data Quality
 
-- Name:
+- Name: Josiah Davis
 - Course: Database for Analytics
 - Module: 2
 - Database Used: World Database (PostgreSQL)
@@ -24,14 +24,12 @@ When importing records from `worldPGSQL.sql`, **how many cities were imported**?
 
 ### Answer
 
-_Write the number of cities imported._
+4,079 cities.
 
 ### Screenshot
 
-_Show evidence of how you determined this (for example, a COUNT query)._
-
 ```sql
--- Your SQL here
+SELECT COUNT(*) AS city_count FROM city;
 ```
 
 ![Q1 Screenshot](screenshots/q1_city_count.png)
@@ -47,8 +45,13 @@ along with the **name of each language spoken in that country**.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT c.name AS country_name, cl.language
+FROM country c
+INNER JOIN countrylanguage cl ON c.code = cl.countrycode
+ORDER BY c.name, cl.language;
 ```
+
+984 rows, which is every row in countrylanguage.
 
 ### Screenshot
 
@@ -65,8 +68,14 @@ of each **official language spoken in that country**.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT c.name AS country_name, cl.language
+FROM country c
+INNER JOIN countrylanguage cl ON c.code = cl.countrycode
+WHERE cl.isofficial = 'T'
+ORDER BY c.name, cl.language;
 ```
+
+238 rows. I checked the column first with SELECT DISTINCT isofficial and it stores 'T' and 'F' as character(2), not a boolean, so the filter is = 'T' and not = TRUE.
 
 ### Screenshot
 
@@ -96,7 +105,11 @@ ON country.code = countrylanguage.countrycode;
 
 ### Answer
 
-_Write your explanation here._
+The first one is an inner join written the old way, with the join condition sitting in the WHERE clause. It only gives you countries that have at least one language row. The second gives you every country either way and fills the countrylanguage columns with NULL when there is no match.
+
+The first returns 984 rows and the second returns 990. Those 6 extra rows are countries with nothing in countrylanguage at all: Antarctica, Bouvet Island, British Indian Ocean Territory, French Southern territories, Heard Island and McDonald Islands, and South Georgia and the South Sandwich Islands. All six are uninhabited, so there is nobody there to record a language for.
+
+That is the part that matters. If you counted countries off the first query you would get 233 instead of 239, and nothing in the output would tell you six went missing.
 
 ---
 
@@ -109,12 +122,16 @@ Do **not** repeat any form of government more than once.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT DISTINCT governmentform
+FROM country
+ORDER BY governmentform;
 ```
+
+35 distinct forms of government.
 
 ### Screenshot
 
-![Q5 Screenshot](screenshots/q5_government_forms.png)
+![Q5 Screenshot](screenshots/q5_government_forms2.png)
 
 ---
 
@@ -127,8 +144,17 @@ Label the column **"City or Country Name"**.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT name AS "City or Country Name"
+FROM city
+UNION
+SELECT name AS "City or Country Name"
+FROM country
+ORDER BY "City or Country Name";
 ```
+
+4,232 rows. There are 4,079 cities and 239 countries, so that should add up to 4,318. UNION dropped 86 duplicates where the same name is both a city and a country, like Singapore and Monaco. UNION ALL would have kept all 4,318.
+
+The alias needs double quotes in Postgres to keep the spaces and capital letters. Single quotes would make it a string instead of a column name.
 
 ### Screenshot
 
@@ -146,8 +172,14 @@ Be sure to **sort by country name**.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT c.name AS country_name, COUNT(cl.language) AS language_count
+FROM country c
+LEFT JOIN countrylanguage cl ON c.code = cl.countrycode
+GROUP BY c.name
+ORDER BY c.name;
 ```
+
+239 rows. I used a LEFT JOIN because the question says all countries. The same six uninhabited territories from Question 4 come back with a count of 0. An INNER JOIN would have returned 233 and dropped them without saying anything.
 
 ### Screenshot
 
@@ -165,8 +197,13 @@ Be sure to **sort by language name**.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT cl.language, COUNT(cl.countrycode) AS country_count
+FROM countrylanguage cl
+GROUP BY cl.language
+ORDER BY cl.language;
 ```
+
+457 languages. No join needed on this one since both columns live in countrylanguage.
 
 ### Screenshot
 
@@ -185,8 +222,18 @@ _Hint: There are 8 such countries in this dataset._
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT c.name AS country_name, COUNT(cl.language) AS official_language_count
+FROM country c
+INNER JOIN countrylanguage cl ON c.code = cl.countrycode
+WHERE cl.isofficial = 'T'
+GROUP BY c.name
+HAVING COUNT(cl.language) > 2
+ORDER BY official_language_count DESC, c.name;
 ```
+
+8 countries. South Africa and Switzerland have 4, and Belgium, Bolivia, Luxembourg, Peru, Singapore, and Vanuatu have 3.
+
+The official language filter goes in WHERE because it filters rows, and the count filter goes in HAVING because it filters groups after the GROUP BY runs. You cannot put a COUNT in a WHERE clause.
 
 ### Screenshot
 
@@ -205,8 +252,21 @@ since some rows use that instead of actual data.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT id, name, countrycode, district, population
+FROM city
+WHERE TRIM(district) LIKE CHR(8211)
+ORDER BY name;
 ```
+
+18 rows.
+
+This one took a few tries. Comparing against a regular hyphen gave me nothing back. I ran SELECT DISTINCT ASCII(TRIM(district)) FROM city WHERE LENGTH(TRIM(district)) = 1 and the character came back as 8211, which is an en dash, not a hyphen. They look identical on screen.
+
+The TRIM matters too. District is character(20), so the stored value is the en dash plus 19 spaces, and a LIKE against the raw column will not match a single character.
+
+There are also 4 rows where district is blank instead of an en dash, so 22 rows total are missing something. The 18 en dash rows are what the question is pointing at.
+
+All 18 are small territories or city-states where a district does not really apply: Adamstown, Vatican City, Gibraltar, Monaco-Ville, Singapore, and the like.
 
 ### Screenshot
 
@@ -224,8 +284,16 @@ _Hint: The result should be approximately 0.4%._
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT
+    COUNT(*) FILTER (WHERE TRIM(district) LIKE CHR(8211)) AS missing_district,
+    COUNT(*) AS total_cities,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE TRIM(district) LIKE CHR(8211)) / COUNT(*), 2) AS pct_missing
+FROM city;
 ```
+
+18 out of 4,079, or 0.44%.
+
+The 100.0 has to have the decimal on it. With a plain 100 Postgres does integer division and returns 0.
 
 ### Screenshot
 
