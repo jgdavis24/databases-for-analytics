@@ -23,6 +23,11 @@ dependencies = [
     # "eda-vizkit", # WHY: Visualization library for exploratory data analysis
     # "matplotlib", # WHY: Foundational plotting library for data visualization
     # "pandas", # WHY: DataFrame library for data manipulation and analysis.
+    "ipykernel>=7.3.0",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "psycopg2-binary>=2.9.13",
+    "sqlalchemy>=2.0.54",
 ]
 
 [dependency-groups]

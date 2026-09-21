@@ -1,8 +1,8 @@
 # Exercise 04: Advanced SQL, Jupyter, and Visualization
 
-- Name:
+- Name: Josiah Davis
 - Course: Database for Analytics
-- Module:
+- Module: 4
 - Database Used: World Database
 - Tools Used: PostgreSQL, SQLAlchemy, Pandas, Jupyter Notebooks
 
@@ -34,8 +34,19 @@ along with the **number of official languages spoken**.
 ### SQL
 
 ```sql
--- Your SQL here
+SELECT c.name AS country,
+       COUNT(cl.language) AS official_languages
+FROM country AS c
+JOIN countrylanguage AS cl
+  ON c.code = cl.countrycode
+WHERE cl.isofficial = 'T'
+GROUP BY c.name
+HAVING COUNT(cl.language) > 2
+ORDER BY official_languages DESC;
 ```
+
+Returns 8 rows. Switzerland and South Africa have 4 official languages.
+Vanuatu, Belgium, Luxembourg, Peru, Bolivia, and Singapore have 3.
 
 ### Screenshot
 
@@ -56,8 +67,24 @@ execute the query from Question 1 and
 ### Python Code
 
 ```python
-# Your three Python statements here
+query = """
+SELECT c.name AS country,
+       COUNT(cl.language) AS official_languages
+FROM country AS c
+JOIN countrylanguage AS cl
+  ON c.code = cl.countrycode
+WHERE cl.isofficial = 'T'
+GROUP BY c.name
+HAVING COUNT(cl.language) > 2
+ORDER BY official_languages DESC;
+"""
+df = pd.read_sql(query, engine)
+df
 ```
+
+The three statements are: assign the SQL to a string variable, pass it to
+`pd.read_sql` with the engine to get a DataFrame, and reference the DataFrame
+on its own line so the notebook renders it.
 
 ### Screenshot
 
@@ -77,8 +104,25 @@ to produce the following graph:
 ### Python Code
 
 ```python
-# Your Python code here
+chart_query = """
+SELECT TRIM(c.name) AS name,
+       COUNT(cl.language) AS num_languages
+FROM country AS c
+JOIN countrylanguage AS cl
+  ON c.code = cl.countrycode
+WHERE cl.isofficial = 'T'
+GROUP BY TRIM(c.name)
+HAVING COUNT(cl.language) > 2
+ORDER BY num_languages DESC;
+"""
+chart_df = pd.read_sql(chart_query, engine)
+
+chart_df.plot(kind="bar", x="name", y="num_languages")
+plt.show()
 ```
+
+`country.name` is `character(52)`, so values come back padded with trailing
+spaces. Without `TRIM` the x axis labels render with the padding included.
 
 ### Screenshot
 
