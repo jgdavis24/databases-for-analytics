@@ -407,7 +407,7 @@ LIMIT 10;
 | RS | 5,432 | 750,304.02 |
 | PR | 4,998 | 683,083.76 |
 
-São Paulo alone is 62% of revenue across 27 states. The top three states are
+São Paulo alone is 38% of revenue across 27 states. The top three states are
 63%. That concentration is geographic rather than behavioral, and it means
 any national average is really an average of São Paulo plus noise.
 
@@ -436,6 +436,7 @@ LIMIT 10;
 | cama_mesa_banho (bed, bath, table) | 11,115 | 1,036,988.68 | 93.30 |
 | esporte_lazer (sports and leisure) | 8,641 | 988,048.97 | 114.34 |
 | informatica_acessorios (computer accessories) | 7,827 | 911,954.32 | 116.51 |
+
 Watches and gifts is the interesting row. It sells 46% fewer items than bed
 and bath but earns more revenue, because the average ticket is more than
 double. Ranking categories by unit volume and ranking them by revenue produce
